@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Violence UNO</title>
+  <title>UNO CHAOS — AI Edition</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 
@@ -20,17 +20,125 @@
       <div class="logo-ver">BY JKNYMOUS</div>
     </div>
     <div class="menu-btns">
-      <button class="btn" onclick="showScreen('setup');initSetup()">NEW GAME</button>
-      <button class="btn purple" onclick="showRulesModal()">HOW TO PLAY</button>
+      <button class="btn" onclick="showScreen('setup');initSetup()">⚡ LOCAL GAME</button>
+      <button class="btn purple" onclick="showScreen('online-menu')">🌐 ONLINE MULTIPLAYER</button>
+      <button class="btn" style="border-color:var(--dim);color:var(--dim)" onclick="showRulesModal()">📡 HOW TO
+        PLAY</button>
     </div>
     <div style="font-size:10px;color:var(--dim);text-align:center;letter-spacing:2px;margin-top:4px">
       2–8 PLAYERS &nbsp;•&nbsp; CHAOS RULES &nbsp;•&nbsp; ULTI SYSTEM
     </div>
   </div>
 
-  <!-- ══════════ SETUP ══════════ -->
+  <!-- ══════════ ONLINE MENU ══════════ -->
+  <div class="screen" id="online-menu">
+    <div class="setup-title">// ONLINE MULTIPLAYER</div>
+
+    <div class="panel" data-label="YOUR IDENTITY" style="max-width:480px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <label style="font-size:9px;color:var(--dim);letter-spacing:2px">YOUR NAME</label>
+        <input id="online-name" type="text" maxlength="14" placeholder="ENTER YOUR NAME" style="background:var(--bg2);border:1px solid var(--border);color:var(--text);
+               font-family:var(--fmono);font-size:14px;padding:10px 14px;outline:none;width:100%"
+          oninput="this.value=this.value.toUpperCase()" />
+
+        <label style="font-size:9px;color:var(--dim);letter-spacing:2px;margin-top:4px">YOUR ULTI</label>
+        <div id="online-ulti-pick" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+      </div>
+    </div>
+
+    <div class="panel" data-label="JOIN OR CREATE" style="max-width:480px">
+      <div style="display:flex;flex-direction:column;gap:12px">
+
+        <!-- Quick Match -->
+        <button class="btn green" onclick="quickMatch()">⚡ QUICK MATCH</button>
+
+        <div style="font-size:9px;color:var(--dim);text-align:center;letter-spacing:2px">— OR —</div>
+
+        <!-- Create Room -->
+        <button class="btn" onclick="showOnlineSetup()">+ CREATE ROOM</button>
+
+        <!-- Join Room -->
+        <div style="display:flex;gap:8px">
+          <input id="room-code-input" type="text" maxlength="6" placeholder="ROOM CODE" style="flex:1;background:var(--bg2);border:1px solid var(--border);color:var(--text);
+                 font-family:var(--fmono);font-size:16px;padding:10px 14px;
+                 outline:none;letter-spacing:4px;text-transform:uppercase"
+            oninput="this.value=this.value.toUpperCase()" />
+          <button class="btn purple" onclick="joinOnlineRoom()">JOIN</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="online-status" style="font-size:11px;color:var(--cyan);letter-spacing:2px;display:none;text-align:center">
+    </div>
+
+    <div style="display:flex;gap:14px;margin-bottom:32px">
+      <button class="btn" onclick="showScreen('menu')">← BACK</button>
+    </div>
+  </div>
+
+  <!-- ══════════ ONLINE SETUP (host chaos rules) ══════════ -->
+  <div class="screen" id="online-setup">
+    <div class="setup-title">// ROOM SETTINGS</div>
+
+    <div class="panel" data-label="CHAOS RULES">
+      <div id="chaos-grid-online" class="chaos-grid"></div>
+    </div>
+
+    <div style="display:flex;gap:14px;margin-bottom:32px;flex-wrap:wrap;justify-content:center">
+      <button class="btn" onclick="showScreen('online-menu')">← BACK</button>
+      <button class="btn green" onclick="createOnlineRoom()">CREATE ROOM →</button>
+    </div>
+  </div>
+
+  <!-- ══════════ LOBBY ══════════ -->
+  <div class="screen" id="lobby">
+    <div class="lobby-wrap">
+
+      <div style="text-align:center">
+        <div class="setup-title" id="lobby-title">// LOBBY</div>
+        <div style="margin-top:12px">
+          <div style="font-size:11px;color:var(--dim);letter-spacing:2px">ROOM CODE</div>
+          <div style="font-family:var(--fhead);font-size:40px;color:var(--cyan);
+                    letter-spacing:12px;text-shadow:0 0 20px var(--cyan);cursor:pointer" onclick="copyRoomCode()"
+            title="Click to copy" id="lobby-code">------</div>
+          <div style="font-size:9px;color:var(--dim);letter-spacing:2px">CLICK TO COPY</div>
+        </div>
+      </div>
+
+      <div class="panel" data-label="PLAYERS IN ROOM" style="max-width:480px">
+        <div id="lobby-players" class="lobby-player-list"></div>
+        <div style="font-size:9px;color:var(--dim);margin-top:10px;letter-spacing:1px">
+          Waiting for players... (2–8 needed to start)
+        </div>
+      </div>
+
+      <!-- Chat -->
+      <div class="panel" data-label="CHAT" style="max-width:480px">
+        <div id="chat-messages" class="chat-box"></div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <input id="chat-input" type="text" maxlength="80" placeholder="say something..." style="flex:1;background:var(--bg2);border:1px solid var(--border);
+                 color:var(--text);font-family:var(--fmono);font-size:12px;
+                 padding:8px 12px;outline:none" onkeydown="if(event.key==='Enter')sendChat()" />
+          <button class="btn-sm" onclick="sendChat()">SEND</button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;align-items:center;margin-bottom:32px">
+        <button class="btn green" id="start-game-btn" onclick="hostStartGame()" style="display:none;min-width:220px">
+          ▶ START GAME
+        </button>
+        <div style="font-size:9px;color:var(--dim);letter-spacing:1px" id="lobby-hint">
+          Share the room code with friends!
+        </div>
+        <button class="btn red" onclick="leaveRoom()" style="min-width:220px">✕ LEAVE ROOM</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════ SETUP (local) ══════════ -->
   <div class="screen" id="setup">
-    <div class="setup-title">// GAME SETUP</div>
+    <div class="setup-title">// LOCAL GAME SETUP</div>
 
     <div class="panel" data-label="PLAYERS (2–8)">
       <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px">
@@ -59,8 +167,6 @@
 
   <!-- ══════════ GAME ══════════ -->
   <div class="screen" id="game">
-
-    <!-- Floating HUD — no box -->
     <div class="game-hud">
       <div class="hud-left">
         <div class="hud-title">UNO//CHAOS</div>
@@ -68,10 +174,13 @@
         <div class="hud-chip">DECK&nbsp;<strong id="hdr-deck">108</strong></div>
         <div class="hud-token">◈&nbsp;<span id="token-count">0</span></div>
       </div>
-      <button class="btn-sm red" onclick="confirmQuit()">✕ QUIT</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div id="online-indicator" style="display:none;font-size:9px;color:var(--green);letter-spacing:2px">● ONLINE
+        </div>
+        <button class="btn-sm red" onclick="confirmQuit()">✕ QUIT</button>
+      </div>
     </div>
 
-    <!-- Table area: circle + center piles -->
     <div class="table-area" id="table-area">
       <div class="center-zone">
         <div class="pile-group">
@@ -90,19 +199,14 @@
           <div id="draw-pile"></div>
         </div>
       </div>
-      <!-- opp-seat elements injected by JS -->
     </div>
 
-    <!-- Log panel — right side, floating -->
     <div class="log-panel" id="log-panel">
       <div class="log-hdr">// LOG</div>
       <div id="log-body"></div>
     </div>
 
-    <!-- Player hand area — two zones: controls (top) + fan (bottom) -->
     <div class="player-hand-area" id="player-hand-area">
-
-      <!-- Controls zone: always readable, never overlapped by cards -->
       <div class="player-controls">
         <div class="player-info-row">
           <div class="player-name-lbl" id="player-name-lbl">PLAYER_1</div>
@@ -110,29 +214,25 @@
           <div class="ulti-hud" id="ulti-hud"></div>
         </div>
         <div class="action-row">
-          <button class="btn-sm" id="draw-btn" onclick="playerDraw()" disabled>DRAW CARD</button>
+          <button class="btn-sm" id="draw-btn" onclick="handleDraw()" disabled>DRAW CARD</button>
           <button class="btn-sm yellow" id="ulti-btn" onclick="useUlti()" disabled>⚡ ULTI</button>
         </div>
       </div>
-
-      <!-- Fan hand — cards sit here, peek up from bottom -->
       <div class="fan-container" id="fan-container"></div>
-
     </div>
-
-  </div><!-- /game -->
+  </div>
 
   <!-- UNO FAB -->
-  <button class="uno-fab" id="uno-btn" onclick="callUno()">UNO!</button>
+  <button class="uno-fab" id="uno-btn" onclick="handleUnoCall()">UNO!</button>
 
   <!-- ══════════ WIN ══════════ -->
   <div class="screen" id="win">
     <div class="win-title">SYSTEM VICTORY</div>
     <div class="win-name" id="win-name">PLAYER_1</div>
     <div class="win-sub">HAS DOMINATED THE CHAOS PROTOCOL</div>
-    <div class="win-actions">
-      <button class="btn green" onclick="validateAndStart()">▶ REMATCH</button>
-      <button class="btn" onclick="showScreen('menu')">⌂ MENU</button>
+    <div class="win-actions" id="win-actions">
+      <button class="btn green" onclick="handleRematch()">▶ REMATCH</button>
+      <button class="btn" onclick="handleWinMenu()">⌂ MENU</button>
     </div>
   </div>
 
@@ -157,9 +257,156 @@
     </div>
   </div>
 
+  <!-- Socket.io client (loaded from server or CDN fallback) -->
+  <script>
+    // Try loading socket.io from server first, fallback to CDN
+    (function () {
+      const s = document.createElement('script');
+      s.src = '/socket.io/socket.io.js';
+      s.onerror = () => {
+        const fb = document.createElement('script');
+        fb.src = 'https://cdn.socket.io/4.7.2/socket.io.min.js';
+        document.head.appendChild(fb);
+      };
+      document.head.appendChild(s);
+    })();
+  </script>
+
   <script src="game.js"></script>
   <script src="setup.js"></script>
-  <script>showScreen('menu');</script>
+  <script src="lobby.js"></script>
+
+  <script>
+    // ── MODE FLAG ──────────────────────────────────────────────
+    let ONLINE_MODE = false;
+
+    // ── UNIFIED HANDLERS (local vs online) ────────────────────
+    function handleDraw() {
+      if (ONLINE_MODE) onlineDrawCard();
+      else playerDraw();
+    }
+    function handleUnoCall() {
+      if (ONLINE_MODE) onlineCallUno();
+      else callUno();
+    }
+    function handleRematch() {
+      if (ONLINE_MODE) onlineRematch();
+      else validateAndStart();
+    }
+    function handleWinMenu() {
+      if (ONLINE_MODE) { leaveRoom(); showScreen('menu'); }
+      else showScreen('menu');
+    }
+    function leaveRoom() {
+      if (socket) socket.disconnect();
+      ONLINE_MODE = false;
+      showScreen('menu');
+    }
+
+    // ── ONLINE SETUP SCREEN ────────────────────────────────────
+    function showOnlineSetup() {
+      initSetup(); // reuse chaos grid
+      // Copy chaos grid to online-setup screen
+      const grid = document.getElementById('chaos-grid-online');
+      grid.innerHTML = '';
+      CHAOS_RULES_DEF.forEach(rule => {
+        const el = document.createElement('div');
+        el.className = `chaos-item${setupData.chaosRules[rule.id] ? ' active' : ''}`;
+        el.innerHTML = `<div class="chaos-toggle"></div>
+      <div class="chaos-info">
+        <div class="chaos-name">${rule.name}</div>
+        <div class="chaos-desc">${rule.desc}</div>
+      </div>`;
+        el.onclick = () => {
+          setupData.chaosRules[rule.id] = !setupData.chaosRules[rule.id];
+          el.classList.toggle('active', setupData.chaosRules[rule.id]);
+        };
+        grid.appendChild(el);
+      });
+      showScreen('online-setup');
+    }
+
+    // ── ONLINE ULTI PICKER ─────────────────────────────────────
+    function renderOnlineUltiPick() {
+      const wrap = document.getElementById('online-ulti-pick');
+      if (!wrap) return;
+      wrap.innerHTML = '';
+      ULTIS_DEF.forEach(u => {
+        const el = document.createElement('div');
+        el.className = `ulti-card${setupData.playerUltis[0] === u.id ? ' selected' : ''}`;
+        el.style.padding = '10px';
+        el.innerHTML = `<div class="ulti-icon" style="font-size:18px">${u.icon}</div>
+      <div class="ulti-name" style="font-size:9px">${u.name}</div>`;
+        el.onclick = () => { setupData.playerUltis[0] = u.id; renderOnlineUltiPick(); };
+        wrap.appendChild(el);
+      });
+    }
+
+    // ── OVERRIDE playCard for online mode ─────────────────────
+    const _origHandleCardClick = window.handleCardClick;
+    window.handleCardClick = function (idx, el, angle) {
+      if (ONLINE_MODE) {
+        // animate then send to server
+        const cardRect = el.getBoundingClientRect();
+        const discardEl = document.getElementById('discard-pile');
+        const dRect = discardEl ? discardEl.getBoundingClientRect() : null;
+        const clone = el.cloneNode(true);
+        clone.style.cssText = `position:fixed;left:${cardRect.left}px;top:${cardRect.top}px;
+      width:${cardRect.width}px;height:${cardRect.height}px;margin:0;z-index:9999;
+      pointer-events:none;transform:rotate(${angle}deg);transform-origin:bottom center;`;
+        document.body.appendChild(clone);
+        el.style.visibility = 'hidden';
+        let flyX = 0, flyY = -180, flyRot = -angle;
+        if (dRect) {
+          flyX = dRect.left + dRect.width / 2 - cardRect.left - cardRect.width / 2;
+          flyY = dRect.top + dRect.height / 2 - cardRect.top - cardRect.height / 2;
+        }
+        const anim = clone.animate([
+          { transform: `rotate(${angle}deg) scale(1)`, opacity: 1 },
+          { transform: `rotate(${angle}deg) scale(1.12) translateY(-14px)`, opacity: 1, offset: .25 },
+          { transform: `translate(${flyX}px,${flyY}px) rotate(${flyRot}deg) scale(.9)`, opacity: .1 }
+        ], { duration: 400, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' });
+        anim.onfinish = () => {
+          clone.remove();
+
+          // Check if wild — ask color first
+          const card = G.players[0].hand[idx];
+          if (card && (card.type === 'wild' || card.type === 'wild4')) {
+            openColorModal(color => onlinePlayCard(idx, color));
+          } else {
+            onlinePlayCard(idx, null);
+          }
+        };
+      } else {
+        _origHandleCardClick(idx, el, angle);
+      }
+    };
+
+    // Boot
+    showScreen('menu');
+    // Render online ulti picker when online-menu shows
+    const _origShowScreen = showScreen;
+    window.showScreen = function (id) {
+      _origShowScreen(id);
+      if (id === 'online-menu') {
+        if (!setupData.chaosRules || !Object.keys(setupData.chaosRules).length) initSetup();
+        renderOnlineUltiPick();
+        document.getElementById('online-status').style.display = 'none';
+      }
+      if (id === 'game' && ONLINE_MODE) {
+        document.getElementById('online-indicator').style.display = 'block';
+      } else if (id === 'game') {
+        document.getElementById('online-indicator').style.display = 'none';
+      }
+    };
+
+    // Set ONLINE_MODE when online game starts
+    const _origApply = window.applyServerState;
+    window.applyServerState = function (state) {
+      ONLINE_MODE = true;
+      if (_origApply) _origApply(state);
+    };
+  </script>
 </body>
 
 </html>
