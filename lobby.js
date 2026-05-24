@@ -5,9 +5,9 @@
 
 // Socket.io client — loaded via CDN in index.html
 let socket = null;
-let myRoomCode = null;
-let mySocketId = null;
-let isHost = false;
+let myRoomCode  = null;
+let mySocketId  = null;
+let isHost      = false;
 let lobbyPlayers = [];
 
 // ── CONNECT TO SERVER ────────────────────────────────────────
@@ -20,7 +20,7 @@ function connectSocket() {
     : window.location.origin;
 
   return new Promise((resolve, reject) => {
-    socket = io(SERVER_URL, { transports: ['websocket', 'polling'] });
+    socket = io(SERVER_URL, { transports:['websocket','polling'] });
 
     socket.on('connect', () => {
       mySocketId = socket.id;
@@ -71,7 +71,7 @@ function setupSocketListeners() {
   socket.on('gameState', (state) => {
     // Only apply if we're in game screen
     if (document.getElementById('game').classList.contains('active') ||
-      state.status === 'playing') {
+        state.status === 'playing') {
       // Make sure we're on game screen
       if (!document.getElementById('game').classList.contains('active')) {
         showScreen('game');
@@ -128,12 +128,12 @@ async function createOnlineRoom() {
 
     socket.emit('createRoom', {
       playerName,
-      ulti: ultiId,
+      ulti:       ultiId,
       chaosRules: setupData.chaosRules,
     }, (res) => {
       if (!res.ok) return showOnlineStatus('ERROR: ' + res.reason, true);
       myRoomCode = res.code;
-      isHost = true;
+      isHost     = true;
       lobbyPlayers = res.players;
       showLobbyScreen(res.code, res.players, true);
     });
@@ -144,8 +144,8 @@ async function createOnlineRoom() {
 
 // ── JOIN ROOM ────────────────────────────────────────────────
 async function joinOnlineRoom() {
-  const code = (document.getElementById('room-code-input')?.value || '').trim().toUpperCase();
-  const nameEl = document.getElementById('online-name');
+  const code     = (document.getElementById('room-code-input')?.value || '').trim().toUpperCase();
+  const nameEl   = document.getElementById('online-name');
   const playerName = (nameEl?.value || 'PLAYER_2').toUpperCase().trim();
 
   if (!code || code.length !== 6) return showOnlineStatus('ENTER A VALID 6-CHAR CODE', true);
@@ -157,7 +157,7 @@ async function joinOnlineRoom() {
     socket.emit('joinRoom', { code, playerName, ulti: setupData.playerUltis[0] || 'ghost' }, (res) => {
       if (!res.ok) return showOnlineStatus('ERROR: ' + res.reason, true);
       myRoomCode = res.code;
-      isHost = (res.hostId === mySocketId);
+      isHost     = (res.hostId === mySocketId);
       lobbyPlayers = res.players;
       setupData.chaosRules = res.chaosRules || {};
       showLobbyScreen(res.code, res.players, false);
@@ -176,10 +176,10 @@ async function quickMatch() {
     showOnlineStatus('SEARCHING...');
     await connectSocket();
 
-    socket.emit('quickJoin', { playerName, ulti: setupData.playerUltis[0] || 'ghost' }, (res) => {
-      if (!res.ok) return showOnlineStatus('ERROR: ' + (res.reason || ''), true);
-      myRoomCode = res.code;
-      isHost = res.created || false;
+    socket.emit('quickJoin', { playerName, ulti: setupData.playerUltis[0]||'ghost' }, (res) => {
+      if (!res.ok) return showOnlineStatus('ERROR: ' + (res.reason||''), true);
+      myRoomCode   = res.code;
+      isHost       = res.created || false;
       lobbyPlayers = res.players;
       showLobbyScreen(res.code, res.players, isHost);
       if (res.created) showOnlineStatus('WAITING FOR PLAYERS...', false, 'warn');
@@ -200,7 +200,7 @@ function hostStartGame() {
 // ── LOBBY SCREEN ─────────────────────────────────────────────
 function showLobbyScreen(code, players, hosting) {
   showScreen('lobby');
-  document.getElementById('lobby-code').textContent = code;
+  document.getElementById('lobby-code').textContent  = code;
   document.getElementById('lobby-title').textContent = hosting ? '// YOU ARE HOST' : '// JOINED ROOM';
   renderLobbyPlayers(players, hosting ? mySocketId : null);
   updateStartBtn();
@@ -211,14 +211,14 @@ function renderLobbyPlayers(players, hostId) {
   if (!list) return;
   list.innerHTML = '';
   players.forEach(p => {
-    const el = document.createElement('div');
+    const el  = document.createElement('div');
     el.className = 'lobby-player-row';
     const isMe = p.id === mySocketId;
-    const isH = p.id === hostId;
+    const isH  = p.id === hostId;
     el.innerHTML = `
-      <div class="lp-name ${isMe ? 'me' : ''}">${p.name}</div>
-      <div class="lp-ulti">${getUltiDef(p.ulti)?.icon || ''} ${getUltiDef(p.ulti)?.name || ''}</div>
-      <div class="lp-badge">${isH ? 'HOST' : ''} ${isMe ? '(YOU)' : ''}</div>
+      <div class="lp-name ${isMe?'me':''}">${p.name}</div>
+      <div class="lp-ulti">${getUltiDef(p.ulti)?.icon||''} ${getUltiDef(p.ulti)?.name||''}</div>
+      <div class="lp-badge">${isH?'HOST':''} ${isMe?'(YOU)':''}</div>
     `;
     list.appendChild(el);
   });
@@ -228,8 +228,8 @@ function renderLobbyPlayers(players, hostId) {
 function updateStartBtn() {
   const btn = document.getElementById('start-game-btn');
   if (!btn) return;
-  btn.style.display = isHost ? 'block' : 'none';
-  btn.disabled = lobbyPlayers.length < 2;
+  btn.style.display  = isHost ? 'block' : 'none';
+  btn.disabled       = lobbyPlayers.length < 2;
 }
 
 // ── CHAT ─────────────────────────────────────────────────────
@@ -252,11 +252,11 @@ function appendChat(player, text) {
 }
 
 // ── STATUS DISPLAY ───────────────────────────────────────────
-function showOnlineStatus(msg, isError = false, type = '') {
+function showOnlineStatus(msg, isError=false, type='') {
   const el = document.getElementById('online-status');
   if (!el) return;
-  el.textContent = msg;
-  el.style.color = isError ? 'var(--red)' : type === 'warn' ? 'var(--yellow)' : 'var(--cyan)';
+  el.textContent  = msg;
+  el.style.color  = isError ? 'var(--red)' : type==='warn' ? 'var(--yellow)' : 'var(--cyan)';
   el.style.display = 'block';
 }
 
@@ -268,16 +268,15 @@ function showToastLobby(msg, type) {
 // Override for online mode — sends to server instead of local logic
 function onlinePlayCard(cardIdx, chosenColor) {
   if (!socket) return;
-  // Optimistically lock while waiting for server ack
   G.actionLock = true;
-  socket.emit('playCard', { cardIdx, chosenColor }, (res) => {
+  // Send card identity so server can find it reliably, not just by index
+  const cardData = G.players[0]?.hand?.[cardIdx] || null;
+  socket.emit('playCard', { cardIdx, chosenColor, cardData }, (res) => {
     if (!res?.ok) {
-      // Server rejected — unlock and re-render so player can try again
       G.actionLock = false;
       toast(res?.reason || 'ILLEGAL MOVE', 'danger');
       renderGame();
     }
-    // If ok: server will broadcast new gameState → applyServerState → renderGame
   });
 }
 
@@ -311,17 +310,17 @@ function applyServerState(state) {
   // Reorder players so local player (me) is always index 0
   // Server player order: [0,1,2,...] → reordered: [myIdx, myIdx+1, ..., myIdx-1]
   const n = state.players.length;
-  const reordered = Array.from({ length: n }, (_, i) => state.players[(myIdx + i) % n]);
+  const reordered = Array.from({length: n}, (_, i) => state.players[(myIdx + i) % n]);
 
   G.players = reordered.map((p, i) => ({
-    name: p.name,
+    name:    p.name,
     // i===0 = ME: use real cards from server (myHand is always fresh from server)
     // i > 0 = opponents: dummy face-down cards just for rendering count
-    hand: i === 0
-      ? (state.myHand || []).filter(c => c && c.color && c.value)
-      : Array(p.cardCount).fill({ color: 'back', value: 'back', type: 'back' }),
+    hand:    i === 0
+               ? (state.myHand || []).filter(c => c && c.color && c.value)
+               : Array(p.cardCount).fill({ color:'back', value:'back', type:'back' }),
     isHuman: i === 0,
-    ulti: p.ulti,
+    ulti:    p.ulti,
     _serverId: p.id,
   }));
 
@@ -330,17 +329,17 @@ function applyServerState(state) {
   G.currentPlayer = reordered.findIndex(p => p.id === cpId);
   if (G.currentPlayer === -1) G.currentPlayer = 0;
 
-  G.direction = state.direction;
-  G.turn = state.turn;
-  G.drawStack = state.drawStack;
+  G.direction    = state.direction;
+  G.turn         = state.turn;
+  G.drawStack    = state.drawStack;
   G.currentColor = state.currentColor;
-  G.discard = state.discard || [];
-  G.deck = Array(state.deckCount || 0).fill({ color: 'back', value: '?', type: 'back' });
-  G.chaosRules = state.chaosRules || {};
-  G.ultiCharges = { 0: state.ultiCharges?.[mySocketId] || 0 };
+  G.discard      = state.discard || [];
+  G.deck         = Array(state.deckCount || 0).fill({ color:'back', value:'?', type:'back' });
+  G.chaosRules   = state.chaosRules || {};
+  G.ultiCharges  = { 0: state.ultiCharges?.[mySocketId] || 0 };
   // Lock input if not my turn
-  G.actionLock = (cpId !== mySocketId);
-  G.tokens = G.tokens || 0;
+  G.actionLock   = (cpId !== mySocketId);
+  G.tokens       = G.tokens || 0;
   // Reset UNO flag each time state arrives
   if (cpId === mySocketId) G.humanCalledUno = false;
 
