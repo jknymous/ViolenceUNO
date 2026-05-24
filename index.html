@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>UNO CHAOS — AI Edition</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <div class="scanline"></div>
+
+  <!-- ══════════ MENU ══════════ -->
+  <div class="screen active" id="menu">
+    <div class="logo">
+      <div class="logo-main">UNO</div>
+      <div class="logo-sub">CHAOS PROTOCOL</div>
+      <div class="logo-ver">v3.0 — AI EDITION</div>
+    </div>
+    <div class="menu-btns">
+      <button class="btn" onclick="showScreen('setup');initSetup()">⚡ NEW GAME</button>
+      <button class="btn purple" onclick="showRulesModal()">📡 HOW TO PLAY</button>
+    </div>
+    <div style="font-size:10px;color:var(--dim);text-align:center;letter-spacing:2px;margin-top:4px">
+      2–8 PLAYERS &nbsp;•&nbsp; CHAOS RULES &nbsp;•&nbsp; ULTI SYSTEM
+    </div>
+  </div>
+
+  <!-- ══════════ SETUP ══════════ -->
+  <div class="screen" id="setup">
+    <div class="setup-title">// GAME SETUP</div>
+
+    <div class="panel" data-label="PLAYERS (2–8)">
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px">
+        <button class="btn-sm red" onclick="removePlayer()">− REMOVE</button>
+        <span id="player-count-label" style="font-size:11px;color:var(--dim);flex:1;text-align:center">4 PLAYERS</span>
+        <button class="btn-sm" onclick="addPlayer()">+ ADD</button>
+      </div>
+      <div id="player-list" class="player-list"></div>
+    </div>
+
+    <div class="panel" data-label="CHAOS RULES">
+      <div id="chaos-grid" class="chaos-grid"></div>
+    </div>
+
+    <div class="panel" data-label="ULTI SELECTION">
+      <p style="font-size:10px;color:var(--dim);margin-bottom:12px">Each player picks 1 ULTI. Use the dots to switch
+        players.</p>
+      <div id="ulti-grid" class="ulti-grid"></div>
+    </div>
+
+    <div style="display:flex;gap:14px;margin-bottom:36px;flex-wrap:wrap;justify-content:center">
+      <button class="btn" onclick="showScreen('menu')">← BACK</button>
+      <button class="btn green" onclick="validateAndStart()">▶ LAUNCH GAME</button>
+    </div>
+  </div>
+
+  <!-- ══════════ GAME ══════════ -->
+  <div class="screen" id="game">
+
+    <!-- Floating HUD — no box -->
+    <div class="game-hud">
+      <div class="hud-left">
+        <div class="hud-title">UNO//CHAOS</div>
+        <div class="hud-chip">T&nbsp;<strong id="hdr-turn">1</strong></div>
+        <div class="hud-chip">DECK&nbsp;<strong id="hdr-deck">108</strong></div>
+        <div class="hud-token">◈&nbsp;<span id="token-count">0</span></div>
+      </div>
+      <button class="btn-sm red" onclick="confirmQuit()">✕ QUIT</button>
+    </div>
+
+    <!-- Table area: circle + center piles -->
+    <div class="table-area" id="table-area">
+      <div class="center-zone">
+        <div class="pile-group">
+          <div class="pile-label">DISCARD</div>
+          <div id="discard-pile"></div>
+        </div>
+        <div class="game-status">
+          <div class="dir-badge" id="dir-badge">↻</div>
+          <div class="color-ind">
+            <div class="color-dot" id="color-dot"></div>
+            <div class="color-name" id="color-name">BLUE</div>
+          </div>
+        </div>
+        <div class="pile-group">
+          <div class="pile-label">DRAW</div>
+          <div id="draw-pile"></div>
+        </div>
+      </div>
+      <!-- opp-seat elements injected by JS -->
+    </div>
+
+    <!-- Log panel — right side, floating -->
+    <div class="log-panel" id="log-panel">
+      <div class="log-hdr">// LOG</div>
+      <div id="log-body"></div>
+    </div>
+
+    <!-- Player hand area — two zones: controls (top) + fan (bottom) -->
+    <div class="player-hand-area" id="player-hand-area">
+
+      <!-- Controls zone: always readable, never overlapped by cards -->
+      <div class="player-controls">
+        <div class="player-info-row">
+          <div class="player-name-lbl" id="player-name-lbl">PLAYER_1</div>
+          <div id="turn-status"><span class="wait-badge">WAITING...</span></div>
+          <div class="ulti-hud" id="ulti-hud"></div>
+        </div>
+        <div class="action-row">
+          <button class="btn-sm" id="draw-btn" onclick="playerDraw()" disabled>DRAW CARD</button>
+          <button class="btn-sm yellow" id="ulti-btn" onclick="useUlti()" disabled>⚡ ULTI</button>
+        </div>
+      </div>
+
+      <!-- Fan hand — cards sit here, peek up from bottom -->
+      <div class="fan-container" id="fan-container"></div>
+
+    </div>
+
+  </div><!-- /game -->
+
+  <!-- UNO FAB -->
+  <button class="uno-fab" id="uno-btn" onclick="callUno()">UNO!</button>
+
+  <!-- ══════════ WIN ══════════ -->
+  <div class="screen" id="win">
+    <div class="win-title">SYSTEM VICTORY</div>
+    <div class="win-name" id="win-name">PLAYER_1</div>
+    <div class="win-sub">HAS DOMINATED THE CHAOS PROTOCOL</div>
+    <div class="win-actions">
+      <button class="btn green" onclick="validateAndStart()">▶ REMATCH</button>
+      <button class="btn" onclick="showScreen('menu')">⌂ MENU</button>
+    </div>
+  </div>
+
+  <!-- MODAL: Color -->
+  <div class="overlay" id="color-overlay">
+    <div class="modal">
+      <div class="modal-title">// SELECT COLOR</div>
+      <div class="color-grid">
+        <button class="col-btn red" onclick="pickColor('red')">🔴 RED</button>
+        <button class="col-btn blue" onclick="pickColor('blue')">🔵 BLUE</button>
+        <button class="col-btn green" onclick="pickColor('green')">🟢 GREEN</button>
+        <button class="col-btn yellow" onclick="pickColor('yellow')">🟡 YELLOW</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Swap -->
+  <div class="overlay" id="swap-overlay">
+    <div class="modal">
+      <div class="modal-title" id="swap-title">// SELECT TARGET</div>
+      <div class="target-list" id="swap-list"></div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+  <script src="setup.js"></script>
+  <script>showScreen('menu');</script>
+</body>
+
+</html>
