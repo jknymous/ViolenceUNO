@@ -368,11 +368,13 @@
         ], { duration: 400, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' });
         anim.onfinish = () => {
           clone.remove();
-
-          // Check if wild — ask color first
+          // Check if wild — must ask color BEFORE sending to server
           const card = G.players[0].hand[idx];
-          if (card && (card.type === 'wild' || card.type === 'wild4')) {
-            openColorModal(color => onlinePlayCard(idx, color));
+          if (!card) return; // guard
+          if (card.type === 'wild' || card.type === 'wild4') {
+            openColorModal(color => {
+              onlinePlayCard(idx, color);
+            });
           } else {
             onlinePlayCard(idx, null);
           }

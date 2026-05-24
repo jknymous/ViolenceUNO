@@ -17,7 +17,7 @@ function connectSocket() {
   // Use same origin in production, localhost in dev
   const SERVER_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:3000'
-    : 'violenceuno-server-production.up.railway.app';
+    : window.location.origin;
 
   return new Promise((resolve, reject) => {
     socket = io(SERVER_URL, { transports: ['websocket', 'polling'] });
@@ -69,7 +69,15 @@ function setupSocketListeners() {
 
   // Game state (authoritative from server)
   socket.on('gameState', (state) => {
-    applyServerState(state);
+    // Only apply if we're in game screen
+    if (document.getElementById('game').classList.contains('active') ||
+      state.status === 'playing') {
+      // Make sure we're on game screen
+      if (!document.getElementById('game').classList.contains('active')) {
+        showScreen('game');
+      }
+      applyServerState(state);
+    }
   });
 
   // Game log
@@ -260,15 +268,28 @@ function showToastLobby(msg, type) {
 // Override for online mode — sends to server instead of local logic
 function onlinePlayCard(cardIdx, chosenColor) {
   if (!socket) return;
+  // Optimistically lock while waiting for server ack
+  G.actionLock = true;
   socket.emit('playCard', { cardIdx, chosenColor }, (res) => {
-    if (!res?.ok) toast(res?.reason || 'Illegal move', 'danger');
+    if (!res?.ok) {
+      // Server rejected — unlock and re-render so player can try again
+      G.actionLock = false;
+      toast(res?.reason || 'ILLEGAL MOVE', 'danger');
+      renderGame();
+    }
+    // If ok: server will broadcast new gameState → applyServerState → renderGame
   });
 }
 
 function onlineDrawCard() {
   if (!socket) return;
+  G.actionLock = true;
   socket.emit('drawCard', {}, (res) => {
-    if (!res?.ok) toast('Cannot draw', 'danger');
+    if (!res?.ok) {
+      G.actionLock = false;
+      toast('CANNOT DRAW', 'danger');
+      renderGame();
+    }
   });
 }
 
@@ -283,38 +304,45 @@ function onlineCallUno() {
 function applyServerState(state) {
   if (!state) return;
 
-  // Rebuild G from server state for rendering
-  G.players = state.players.map(p => ({
+  // Find where I am in the server's player list
+  const myIdx = state.players.findIndex(p => p.id === mySocketId);
+  if (myIdx === -1) return; // I'm not in this game yet
+
+  // Reorder players so local player (me) is always index 0
+  // Server player order: [0,1,2,...] → reordered: [myIdx, myIdx+1, ..., myIdx-1]
+  const n = state.players.length;
+  const reordered = Array.from({ length: n }, (_, i) => state.players[(myIdx + i) % n]);
+
+  G.players = reordered.map((p, i) => ({
     name: p.name,
-    hand: p.id === mySocketId ? state.myHand : Array(p.cardCount).fill({}),
-    isHuman: p.id === mySocketId,
+    // FIX: my hand = real cards from server. Others = dummy placeholders for rendering only.
+    // Use null cards so renderer knows not to show values
+    hand: i === 0
+      ? (state.myHand || [])
+      : Array(p.cardCount).fill({ color: 'back', value: '?', type: 'back' }),
+    isHuman: i === 0,
     ulti: p.ulti,
+    _serverId: p.id, // keep server id for reference
   }));
 
-  // Reorder so local player is always index 0
-  const myIdx = state.players.findIndex(p => p.id === mySocketId);
-  if (myIdx > 0) {
-    G.players = [...G.players.slice(myIdx), ...G.players.slice(0, myIdx)];
-  }
-
-  G.currentPlayer = (() => {
-    const cpId = state.currentPlayerId;
-    return G.players.findIndex((p, i) => {
-      const orig = state.players[(myIdx + i) % state.players.length];
-      return orig?.id === cpId;
-    });
-  })();
+  // currentPlayer: find reordered index of the server's current player
+  const cpId = state.currentPlayerId;
+  G.currentPlayer = reordered.findIndex(p => p.id === cpId);
+  if (G.currentPlayer === -1) G.currentPlayer = 0;
 
   G.direction = state.direction;
   G.turn = state.turn;
   G.drawStack = state.drawStack;
   G.currentColor = state.currentColor;
-  G.discard = state.discard;
-  G.deck = Array(state.deckCount).fill({});
-  G.chaosRules = state.chaosRules;
+  G.discard = state.discard || [];
+  G.deck = Array(state.deckCount || 0).fill({ color: 'back', value: '?', type: 'back' });
+  G.chaosRules = state.chaosRules || {};
   G.ultiCharges = { 0: state.ultiCharges?.[mySocketId] || 0 };
-  G.actionLock = (state.currentPlayerId !== mySocketId);
+  // Lock input if not my turn
+  G.actionLock = (cpId !== mySocketId);
   G.tokens = G.tokens || 0;
+  // Reset UNO flag each time state arrives
+  if (cpId === mySocketId) G.humanCalledUno = false;
 
   if (state.status === 'finished') return;
 
