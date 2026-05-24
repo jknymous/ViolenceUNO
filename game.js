@@ -5,69 +5,69 @@
 // ── DATA ─────────────────────────────────────────────────────
 
 const CHAOS_RULES_DEF = [
-  { id:'rule7',       name:'7-SWAP',        desc:'Play a 7 → swap hand with any player.',                    def:true  },
-  { id:'rule0',       name:'0-ROTATE',       desc:'Play a 0 → all hands rotate in current direction.',        def:true  },
-  { id:'jumpIn',      name:'JUMP-IN',         desc:'Play an identical card out of turn to steal the round.',   def:false },
-  { id:'stackPlus',   name:'STACK +2/+4',     desc:'Stack Draw cards — total passes forward.',                 def:true  },
-  { id:'progressive', name:'PROGRESSIVE UNO', desc:'Keep stacking until someone can\'t — they draw it all.', def:false },
-  { id:'noBluff',     name:'NO-BLUFF +4',     desc:'Wild+4 playable anytime, no color restriction.',           def:false },
+  { id: 'rule7', name: '7-SWAP', desc: 'Play a 7 → swap hand with any player.', def: true },
+  { id: 'rule0', name: '0-ROTATE', desc: 'Play a 0 → all hands rotate in current direction.', def: true },
+  { id: 'jumpIn', name: 'JUMP-IN', desc: 'Play an identical card out of turn to steal the round.', def: false },
+  { id: 'stackPlus', name: 'STACK +2/+4', desc: 'Stack Draw cards — total passes forward.', def: true },
+  { id: 'progressive', name: 'PROGRESSIVE UNO', desc: 'Keep stacking until someone can\'t — they draw it all.', def: false },
+  { id: 'noBluff', name: 'NO-BLUFF +4', desc: 'Wild+4 playable anytime, no color restriction.', def: false },
 ];
 
 const ULTIS_DEF = [
-  { id:'ghost',      name:'GHOST PROTOCOL', type:'PASSIVE', icon:'👻', charge:0, passive:true,  desc:'Your card count shows as "?" to opponents.' },
-  { id:'firewall',   name:'FIREWALL',        type:'PASSIVE', icon:'🛡️', charge:0, passive:true,  desc:'Once per game, auto-block a +2 or +4 aimed at you.' },
-  { id:'datamirror', name:'DATA MIRROR',     type:'PASSIVE', icon:'🔮', charge:0, passive:true,  desc:'You can always see the top 2 cards of the draw pile.' },
-  { id:'hack',       name:'SYSTEM HACK',     type:'ACTIVE',  icon:'💀', charge:3, passive:false, desc:'Force a target player to draw 2 extra cards.' },
-  { id:'reboot',     name:'REBOOT',          type:'ACTIVE',  icon:'🔄', charge:2, passive:false, desc:'Discard your hand, draw the same number fresh.' },
-  { id:'emp',        name:'EMP BLAST',       type:'ACTIVE',  icon:'⚡', charge:1, passive:false, desc:'Skip all other players for one full rotation.' },
-  { id:'neuralsync', name:'NEURAL SYNC',     type:'ACTIVE',  icon:'🧠', charge:2, passive:false, desc:'Swap your hand with any chosen player.' },
-  { id:'overclock',  name:'OVERCLOCK',       type:'ACTIVE',  icon:'⏩', charge:3, passive:false, desc:'Play up to 2 cards on your next turn.' },
+  { id: 'ghost', name: 'GHOST PROTOCOL', type: 'PASSIVE', icon: '👻', charge: 0, passive: true, desc: 'Your card count shows as "?" to opponents.' },
+  { id: 'firewall', name: 'FIREWALL', type: 'PASSIVE', icon: '🛡️', charge: 0, passive: true, desc: 'Once per game, auto-block a +2 or +4 aimed at you.' },
+  { id: 'datamirror', name: 'DATA MIRROR', type: 'PASSIVE', icon: '🔮', charge: 0, passive: true, desc: 'You can always see the top 2 cards of the draw pile.' },
+  { id: 'hack', name: 'SYSTEM HACK', type: 'ACTIVE', icon: '💀', charge: 3, passive: false, desc: 'Force a target player to draw 2 extra cards.' },
+  { id: 'reboot', name: 'REBOOT', type: 'ACTIVE', icon: '🔄', charge: 2, passive: false, desc: 'Discard your hand, draw the same number fresh.' },
+  { id: 'emp', name: 'EMP BLAST', type: 'ACTIVE', icon: '⚡', charge: 1, passive: false, desc: 'Skip all other players for one full rotation.' },
+  { id: 'neuralsync', name: 'NEURAL SYNC', type: 'ACTIVE', icon: '🧠', charge: 2, passive: false, desc: 'Swap your hand with any chosen player.' },
+  { id: 'overclock', name: 'OVERCLOCK', type: 'ACTIVE', icon: '⏩', charge: 3, passive: false, desc: 'Play up to 2 cards on your next turn.' },
 ];
 
 // ── SHARED STATE ─────────────────────────────────────────────
 let G = {};
 let setupData = {
-  playerNames: ['PLAYER_1','PLAYER_2','PLAYER_3','PLAYER_4'],
-  chaosRules:  {},
+  playerNames: ['PLAYER_1', 'PLAYER_2', 'PLAYER_3', 'PLAYER_4'],
+  chaosRules: {},
   playerUltis: {},
 };
 
 // ── UTILS ─────────────────────────────────────────────────────
 function shuffle(arr) {
   const a = [...arr];
-  for (let i = a.length-1; i>0; i--) {
-    const j = Math.floor(Math.random()*(i+1));
-    [a[i],a[j]] = [a[j],a[i]];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
 }
-function getUltiDef(id)  { return ULTIS_DEF.find(u => u.id === id); }
-function cardLabel(c)    { return c ? `${c.color.toUpperCase()} ${c.value.toUpperCase()}` : ''; }
-function isModalOpen()   {
+function getUltiDef(id) { return ULTIS_DEF.find(u => u.id === id); }
+function cardLabel(c) { return c ? `${c.color.toUpperCase()} ${c.value.toUpperCase()}` : ''; }
+function isModalOpen() {
   return document.getElementById('color-overlay')?.classList.contains('show') ||
-         document.getElementById('swap-overlay')?.classList.contains('show');
+    document.getElementById('swap-overlay')?.classList.contains('show');
 }
 
 // ── DECK ─────────────────────────────────────────────────────
 function createDeck(n) {
-  const copies = n<=3 ? 1 : n<=6 ? 2 : 3;
-  const colors = ['red','blue','green','yellow'];
-  const deck   = [];
-  for (let d=0; d<copies; d++) {
+  const copies = n <= 3 ? 1 : n <= 6 ? 2 : 3;
+  const colors = ['red', 'blue', 'green', 'yellow'];
+  const deck = [];
+  for (let d = 0; d < copies; d++) {
     colors.forEach(col => {
-      deck.push({color:col, value:'0', type:'number'});
-      ['1','2','3','4','5','6','7','8','9'].forEach(v => {
-        deck.push({color:col, value:v, type:'number'});
-        deck.push({color:col, value:v, type:'number'});
+      deck.push({ color: col, value: '0', type: 'number' });
+      ['1', '2', '3', '4', '5', '6', '7', '8', '9'].forEach(v => {
+        deck.push({ color: col, value: v, type: 'number' });
+        deck.push({ color: col, value: v, type: 'number' });
       });
-      ['skip','reverse','+2'].forEach(v => {
-        deck.push({color:col, value:v, type:'special'});
-        deck.push({color:col, value:v, type:'special'});
+      ['skip', 'reverse', '+2'].forEach(v => {
+        deck.push({ color: col, value: v, type: 'special' });
+        deck.push({ color: col, value: v, type: 'special' });
       });
     });
-    for (let i=0; i<4; i++) {
-      deck.push({color:'wild', value:'wild', type:'wild'});
-      deck.push({color:'wild', value:'+4',   type:'wild4'});
+    for (let i = 0; i < 4; i++) {
+      deck.push({ color: 'wild', value: 'wild', type: 'wild' });
+      deck.push({ color: 'wild', value: '+4', type: 'wild4' });
     }
   }
   return shuffle(deck);
@@ -76,37 +76,37 @@ function createDeck(n) {
 // ── GAME START ───────────────────────────────────────────────
 function startGame() {
   const inputs = document.querySelectorAll('#player-list input');
-  if (inputs.length) inputs.forEach((inp,i) => {
-    setupData.playerNames[i] = inp.value.trim().toUpperCase() || `PLAYER_${i+1}`;
+  if (inputs.length) inputs.forEach((inp, i) => {
+    setupData.playerNames[i] = inp.value.trim().toUpperCase() || `PLAYER_${i + 1}`;
   });
-  setupData.playerNames.forEach((_,i) => {
+  setupData.playerNames.forEach((_, i) => {
     if (!setupData.playerUltis[i]) setupData.playerUltis[i] = ULTIS_DEF[i % ULTIS_DEF.length].id;
   });
 
   G = {
-    players: setupData.playerNames.map((name,i) => ({
-      name, hand:[], isHuman: i===0,
+    players: setupData.playerNames.map((name, i) => ({
+      name, hand: [], isHuman: i === 0,
       ulti: setupData.playerUltis[i] || ULTIS_DEF[0].id,
     })),
-    deck:[], discard:[], currentPlayer:0, direction:1,
-    turn:1, drawStack:0, currentColor:null,
-    chaosRules: {...setupData.chaosRules},
-    ultiCharges:{}, firewallUsed: new Set(),
+    deck: [], discard: [], currentPlayer: 0, direction: 1,
+    turn: 1, drawStack: 0, currentColor: null,
+    chaosRules: { ...setupData.chaosRules },
+    ultiCharges: {}, firewallUsed: new Set(),
     humanCalledUno: false,   // player 0 pressed UNO button
     unoPenaltyTimer: null,   // 2s countdown after playing to 1 card
-    tokens:0, actionLock:false, pendingCB:null,
+    tokens: 0, actionLock: false, pendingCB: null,
   };
 
-  G.players.forEach((_,i) => {
+  G.players.forEach((_, i) => {
     const d = getUltiDef(G.players[i].ulti);
     G.ultiCharges[i] = d ? d.charge : 0;
   });
 
   G.deck = createDeck(G.players.length);
-  G.players.forEach(p => { for(let k=0;k<7;k++) p.hand.push(G.deck.pop()); });
+  G.players.forEach(p => { for (let k = 0; k < 7; k++) p.hand.push(G.deck.pop()); });
 
   let first;
-  do { first = G.deck.pop(); } while(first.type==='wild' || first.type==='wild4');
+  do { first = G.deck.pop(); } while (first.type === 'wild' || first.type === 'wild4');
   G.discard.push(first);
   G.currentColor = first.color;
 
@@ -129,15 +129,15 @@ function renderGame() {
 
 // Opponents in a circle arc across the top
 function renderOpponents() {
-  const area  = document.getElementById('table-area');
+  const area = document.getElementById('table-area');
   area.querySelectorAll('.opp-seat').forEach(el => el.remove());
 
-  const opps  = G.players.filter((_,i) => i !== 0);
+  const opps = G.players.filter((_, i) => i !== 0);
   const total = opps.length;
   if (!total) return;
 
-  const W  = area.offsetWidth  || window.innerWidth;
-  const H  = area.offsetHeight || window.innerHeight * 0.6;
+  const W = area.offsetWidth || window.innerWidth;
+  const H = area.offsetHeight || window.innerHeight * 0.6;
   const cx = W / 2;
   const cy = H / 2;
 
@@ -149,28 +149,28 @@ function renderOpponents() {
 
   opps.forEach((p, idx) => {
     const realIdx = idx + 1;
-    const deg  = startDeg + idx * step;
-    const rad  = (deg * Math.PI) / 180;
-    const x    = cx + rx * Math.cos(rad);
-    const y    = cy + ry * Math.sin(rad);
+    const deg = startDeg + idx * step;
+    const rad = (deg * Math.PI) / 180;
+    const x = cx + rx * Math.cos(rad);
+    const y = cy + ry * Math.sin(rad);
 
-    const seat     = document.createElement('div');
+    const seat = document.createElement('div');
     seat.className = 'opp-seat';
-    seat.style.left      = `${x}px`;
-    seat.style.top       = `${y}px`;
+    seat.style.left = `${x}px`;
+    seat.style.top = `${y}px`;
     seat.style.transform = 'translate(-50%,-50%)';
 
     const isGhosted = getUltiDef(p.ulti)?.id === 'ghost';
-    const count     = isGhosted ? '?' : p.hand.length;
-    const isActive  = realIdx === G.currentPlayer;
-    const ultiDef   = getUltiDef(p.ulti);
+    const count = isGhosted ? '?' : p.hand.length;
+    const isActive = realIdx === G.currentPlayer;
+    const ultiDef = getUltiDef(p.ulti);
 
     // Mini circular fan
-    const fc   = Math.min(p.hand.length, 8);
+    const fc = Math.min(p.hand.length, 8);
     const span = Math.min(60, fc * 9);
     let fanHTML = `<div class="opp-fan">`;
-    for (let f=0; f<fc; f++) {
-      const rot = fc<=1 ? 0 : -span/2 + f*(span/(fc-1));
+    for (let f = 0; f < fc; f++) {
+      const rot = fc <= 1 ? 0 : -span / 2 + f * (span / (fc - 1));
       fanHTML += `<div class="opp-mini-card" style="transform:translateX(-50%) rotate(${rot}deg);margin-left:27px"></div>`;
     }
     fanHTML += `</div>`;
@@ -178,11 +178,11 @@ function renderOpponents() {
     seat.innerHTML = `
       ${fanHTML}
       <div class="opp-avatar${isActive ? ' active-turn' : ''}">
-        ${p.name.slice(0,2)}
+        ${p.name.slice(0, 2)}
         <div class="opp-badge">${count}</div>
       </div>
       <div class="opp-name-lbl">${p.name}</div>
-      <div class="opp-ulti-lbl">${ultiDef?.icon||''} ${ultiDef?.name||''}</div>
+      <div class="opp-ulti-lbl">${ultiDef?.icon || ''} ${ultiDef?.name || ''}</div>
     `;
     area.appendChild(seat);
   });
@@ -202,20 +202,20 @@ function renderCenter() {
   drawEl.appendChild(buildDeckCardEl());
 
   // Direction
-  document.getElementById('dir-badge').textContent = G.direction===1 ? '↻' : '↺';
+  document.getElementById('dir-badge').textContent = G.direction === 1 ? '↻' : '↺';
 
   // Color dot
-  const colorMap = {red:'#ee1133',blue:'#0077ee',green:'#00bb44',yellow:'#ffcc00'};
+  const colorMap = { red: '#ee1133', blue: '#0077ee', green: '#00bb44', yellow: '#ffcc00' };
   const col = G.currentColor || top?.color || 'blue';
   const dot = document.getElementById('color-dot');
   dot.style.background = colorMap[col] || '#0077ee';
-  dot.style.boxShadow  = `0 0 14px ${colorMap[col]||'#0077ee'}`;
+  dot.style.boxShadow = `0 0 14px ${colorMap[col] || '#0077ee'}`;
   document.getElementById('color-name').textContent = col.toUpperCase();
 }
 
 // ── HAND as circular fan ─────────────────────────────────────
 function renderHand() {
-  const human    = G.players[0];
+  const human = G.players[0];
   const isMyTurn = G.currentPlayer === 0 && !G.actionLock;
   const container = document.getElementById('fan-container');
   container.innerHTML = '';
@@ -232,48 +232,48 @@ function renderHand() {
   const count = human.hand.length;
   if (count === 0) { container.style.height = '30px'; return; }
 
-  const style  = getComputedStyle(document.documentElement);
-  const cardW  = parseInt(style.getPropertyValue('--cw')) || 68;
-  const cardH  = parseInt(style.getPropertyValue('--ch')) || 100;
+  const style = getComputedStyle(document.documentElement);
+  const cardW = parseInt(style.getPropertyValue('--cw')) || 68;
+  const cardH = parseInt(style.getPropertyValue('--ch')) || 100;
 
   // Container = exactly card height. Cards sit at bottom:0, fan upward.
-  container.style.height   = `${cardH}px`;
+  container.style.height = `${cardH}px`;
   container.style.overflow = 'visible';
 
   const containerW = container.offsetWidth || window.innerWidth;
   const totalAngle = Math.min(90, count * 7);
   const startAngle = -totalAngle / 2;
-  const angleStep  = count <= 1 ? 0 : totalAngle / (count - 1);
+  const angleStep = count <= 1 ? 0 : totalAngle / (count - 1);
 
   // Overlap-based spread like real cards in hand
   const overlapStep = Math.min(cardW * 0.54, 42);
   const totalSpread = cardW + (count - 1) * overlapStep;
-  const maxSpread   = Math.min(containerW * 0.84, totalSpread);
-  const xStart      = (containerW - maxSpread) / 2;
-  const xStep       = count <= 1 ? 0 : maxSpread / (count - 1);
+  const maxSpread = Math.min(containerW * 0.84, totalSpread);
+  const xStart = (containerW - maxSpread) / 2;
+  const xStep = count <= 1 ? 0 : maxSpread / (count - 1);
 
   human.hand.forEach((card, idx) => {
-    const canP  = isMyTurn && canPlay(card);
-    const el    = buildCardEl(card, canP, false);
+    const canP = isMyTurn && canPlay(card);
+    const el = buildCardEl(card, canP, false);
     const angle = startAngle + idx * angleStep;
-    const xPos  = xStart + idx * xStep;
+    const xPos = xStart + idx * xStep;
 
-    el.style.position        = 'absolute';
-    el.style.left            = `${xPos}px`;
-    el.style.bottom          = '0px';
-    el.style.transform       = `rotate(${angle}deg)`;
+    el.style.position = 'absolute';
+    el.style.left = `${xPos}px`;
+    el.style.bottom = '0px';
+    el.style.transform = `rotate(${angle}deg)`;
     el.style.transformOrigin = 'bottom center';
-    el.style.zIndex          = idx + 1;
+    el.style.zIndex = idx + 1;
     el.style.setProperty('--base-transform', `rotate(${angle}deg)`);
 
     if (canP) {
       el.addEventListener('mouseenter', () => {
         el.style.transform = `rotate(${angle}deg) translateY(-18px) scale(1.08)`;
-        el.style.zIndex    = 200;
+        el.style.zIndex = 200;
       });
       el.addEventListener('mouseleave', () => {
         el.style.transform = `rotate(${angle}deg)`;
-        el.style.zIndex    = idx + 1;
+        el.style.zIndex = idx + 1;
       });
       el.addEventListener('click', () => handleCardClick(idx, el, angle));
     }
@@ -283,16 +283,16 @@ function renderHand() {
 
   // Buttons
   document.getElementById('draw-btn').disabled = !isMyTurn;
-  const ultiDef   = getUltiDef(human.ulti);
+  const ultiDef = getUltiDef(human.ulti);
   const hasCharge = !ultiDef?.passive && G.ultiCharges[0] > 0;
-  const ultiBtn   = document.getElementById('ulti-btn');
-  ultiBtn.disabled    = !isMyTurn || !hasCharge;
+  const ultiBtn = document.getElementById('ulti-btn');
+  ultiBtn.disabled = !isMyTurn || !hasCharge;
   ultiBtn.textContent = ultiDef ? `⚡ ${ultiDef.name}` : '⚡ ULTI';
 
   // ── UNO BUTTON ──
   // Show only on player's OWN turn when hand==2 and hasn't called UNO yet.
   // One press = registered, button disappears immediately.
-  const unoBtn   = document.getElementById('uno-btn');
+  const unoBtn = document.getElementById('uno-btn');
   const needsUno = isMyTurn && human.hand.length === 2 && !G.humanCalledUno;
   unoBtn.classList.toggle('show', needsUno);
 }
@@ -302,8 +302,8 @@ function handleCardClick(idx, el, angle) {
   G.actionLock = true;
 
   // --- Get positions BEFORE touching the DOM ---
-  const cardRect    = el.getBoundingClientRect();
-  const discardEl   = document.getElementById('discard-pile');
+  const cardRect = el.getBoundingClientRect();
+  const discardEl = document.getElementById('discard-pile');
   const discardRect = discardEl ? discardEl.getBoundingClientRect() : null;
 
   // Build a floating clone that lives on <body> so renderGame() can't delete it
@@ -328,18 +328,18 @@ function handleCardClick(idx, el, angle) {
   // Compute fly vector (clone is fixed-positioned, so use viewport coords directly)
   let flyX = 0, flyY = -200, flyRot = -angle;
   if (discardRect) {
-    const discardCX = discardRect.left + discardRect.width  / 2;
-    const discardCY = discardRect.top  + discardRect.height / 2;
-    const cloneCX   = cardRect.left    + cardRect.width     / 2;
-    const cloneCY   = cardRect.top     + cardRect.height    / 2;
-    flyX   = discardCX - cloneCX;
-    flyY   = discardCY - cloneCY;
+    const discardCX = discardRect.left + discardRect.width / 2;
+    const discardCY = discardRect.top + discardRect.height / 2;
+    const cloneCX = cardRect.left + cardRect.width / 2;
+    const cloneCY = cardRect.top + cardRect.height / 2;
+    flyX = discardCX - cloneCX;
+    flyY = discardCY - cloneCY;
     flyRot = -angle;
   }
 
   // Animate clone via Web Animations API (precise, doesn't need CSS class tricks)
   const anim = clone.animate([
-    { transform: `rotate(${angle}deg) scale(1)`,         opacity: 1 },
+    { transform: `rotate(${angle}deg) scale(1)`, opacity: 1 },
     { transform: `rotate(${angle}deg) scale(1.12) translateY(-14px)`, opacity: 1, offset: 0.25 },
     {
       transform: `translate(${flyX}px, ${flyY}px) rotate(${flyRot}deg) scale(0.9)`,
@@ -359,15 +359,15 @@ function handleCardClick(idx, el, angle) {
 }
 
 function renderUltiHud() {
-  const human   = G.players[0];
+  const human = G.players[0];
   const ultiDef = getUltiDef(human.ulti);
-  const hud     = document.getElementById('ulti-hud');
+  const hud = document.getElementById('ulti-hud');
   if (!ultiDef) { hud.innerHTML = ''; return; }
   if (ultiDef.passive) {
     hud.innerHTML = `${ultiDef.icon} <span style="color:var(--purple)">${ultiDef.name}</span> <span style="font-size:9px;color:var(--dim)">PASSIVE</span>`;
   } else {
     const charges = G.ultiCharges[0] || 0;
-    const pips = Array.from({length: ultiDef.charge}, (_,i) =>
+    const pips = Array.from({ length: ultiDef.charge }, (_, i) =>
       `<div class="pip${i < charges ? ' filled' : ''}"></div>`
     ).join('');
     hud.innerHTML = `${ultiDef.icon} <span style="color:var(--purple)">${ultiDef.name}</span><div class="charge-pips">${pips}</div>`;
@@ -375,19 +375,20 @@ function renderUltiHud() {
 }
 
 function updateHud() {
-  document.getElementById('hdr-turn').textContent    = G.turn;
-  document.getElementById('hdr-deck').textContent    = G.deck.length;
+  document.getElementById('hdr-turn').textContent = G.turn;
+  document.getElementById('hdr-deck').textContent = G.deck.length;
   document.getElementById('token-count').textContent = G.tokens;
 }
 
 // ── CARD BUILDERS ─────────────────────────────────────────────
-const SPECIAL_SYM = {skip:'⊘', reverse:'⇌', '+2':'+2', wild:'★', '+4':'+4'};
+const SPECIAL_SYM = { skip: '⊘', reverse: '⇌', '+2': '+2', wild: '★', '+4': '+4' };
 
 function buildCardEl(card, playable, isDiscard) {
   const el = document.createElement('div');
 
   // Face-down card (opponent cards in online mode, or deck placeholder)
-  if (!card || card.type === 'back' || card.color === 'deck' || card.color === 'back') {
+  // ONLY treat as back if explicitly marked — never treat real 'wild' cards as back
+  if (!card || card.type === 'back' || card.color === 'back') {
     el.className = 'card deck no-hover';
     el.innerHTML = `<div class="card-face">
       <div class="card-val" style="font-size:12px;color:var(--cyan);
@@ -397,22 +398,22 @@ function buildCardEl(card, playable, isDiscard) {
   }
 
   const val = SPECIAL_SYM[card.value] ?? card.value;
-  const sm  = card.type !== 'number';
+  const sm = card.type !== 'number';
   el.className = ['card', card.color,
-    playable  ? 'playable'   : (!isDiscard ? 'unplayable' : ''),
-    isDiscard ? 'no-hover'   : '',
+    playable ? 'playable' : (!isDiscard ? 'unplayable' : ''),
+    isDiscard ? 'no-hover' : '',
   ].filter(Boolean).join(' ');
   el.innerHTML = `<div class="card-face">
     <div class="card-corner tl">${val}</div>
-    <div class="card-val${sm?' sm':''}">${val}</div>
+    <div class="card-val${sm ? ' sm' : ''}">${val}</div>
     <div class="card-corner br">${val}</div>
   </div>`;
   // discard card: static size, no absolute
   if (isDiscard) {
     el.style.position = 'relative';
-    el.style.width    = 'var(--cw)';
-    el.style.height   = 'var(--ch)';
-    el.style.cursor   = 'default';
+    el.style.width = 'var(--cw)';
+    el.style.height = 'var(--ch)';
+    el.style.cursor = 'default';
   }
   return el;
 }
@@ -421,22 +422,22 @@ function buildDeckCardEl() {
   const el = document.createElement('div');
   el.className = 'card deck';
   el.style.position = 'relative';
-  el.style.width    = 'var(--cw)';
-  el.style.height   = 'var(--ch)';
-  el.style.cursor   = 'pointer';
+  el.style.width = 'var(--cw)';
+  el.style.height = 'var(--ch)';
+  el.style.cursor = 'pointer';
   el.innerHTML = `<div class="card-face">
     <div class="card-val" style="font-size:12px;color:var(--cyan);-webkit-text-fill-color:var(--cyan);text-shadow:0 0 10px var(--cyan)">UNO</div>
   </div>`;
   el.addEventListener('mouseenter', () => { el.style.transform = 'translateY(-8px)'; });
   el.addEventListener('mouseleave', () => { el.style.transform = ''; });
-  el.addEventListener('click', () => { if (G.currentPlayer===0 && !G.actionLock) playerDraw(); });
+  el.addEventListener('click', () => { if (G.currentPlayer === 0 && !G.actionLock) playerDraw(); });
   return el;
 }
 
 // ── LEGALITY ─────────────────────────────────────────────────
 function canPlay(card) {
   if (isModalOpen()) return false;
-  if (card.type === 'wild')  return true;
+  if (card.type === 'wild') return true;
   if (card.type === 'wild4') return G.chaosRules.noBluff ||
     !G.players[G.currentPlayer].hand.some(c => c.color === G.currentColor);
   if (G.drawStack > 0 && G.chaosRules.stackPlus)
@@ -446,9 +447,9 @@ function canPlay(card) {
 }
 
 // ── DRAW ─────────────────────────────────────────────────────
-function drawCards(pidx, count, silent=false) {
+function drawCards(pidx, count, silent = false) {
   const p = G.players[pidx];
-  for (let i=0; i<count; i++) {
+  for (let i = 0; i < count; i++) {
     if (G.deck.length === 0) reshuffleDeck();
     if (G.deck.length > 0) p.hand.push(G.deck.pop());
   }
@@ -458,7 +459,7 @@ function drawCards(pidx, count, silent=false) {
 function reshuffleDeck() {
   if (G.discard.length <= 1) return;
   const top = G.discard.pop();
-  G.deck    = shuffle(G.discard);
+  G.deck = shuffle(G.discard);
   G.discard = [top];
   gameLog('DECK RESHUFFLED', 'hi');
 }
@@ -468,7 +469,7 @@ function nextPlayerIdx() {
   return (G.currentPlayer + G.direction + G.players.length) % G.players.length;
 }
 
-function advanceTurn(skip=false) {
+function advanceTurn(skip = false) {
   // Clear any pending UNO penalty timer from previous turn
   if (G.unoPenaltyTimer) { clearTimeout(G.unoPenaltyTimer); G.unoPenaltyTimer = null; }
   let next = nextPlayerIdx();
@@ -497,7 +498,7 @@ function advanceTurn(skip=false) {
 function playCard(pidx, cidx) {
   if (G.actionLock && pidx === 0) return;
   const player = G.players[pidx];
-  const card   = player.hand[cidx];
+  const card = player.hand[cidx];
   if (!canPlay(card)) {
     if (pidx === 0) toast('CANNOT PLAY THAT CARD', 'danger');
     return;
@@ -506,7 +507,7 @@ function playCard(pidx, cidx) {
   player.hand.splice(cidx, 1);
   G.discard.push(card);
   if (card.color !== 'wild') G.currentColor = card.color;
-  gameLog(`${player.name} PLAYS ${cardLabel(card)}`, pidx===0 ? 'hi' : '');
+  gameLog(`${player.name} PLAYS ${cardLabel(card)}`, pidx === 0 ? 'hi' : '');
 
   if (player.hand.length === 0) {
     setTimeout(() => showWin(player.name), 400);
@@ -532,7 +533,7 @@ function playCard(pidx, cidx) {
   if (G.chaosRules.rule7 && card.value === '7') {
     const doSwap = (tidx) => {
       [G.players[pidx].hand, G.players[tidx].hand] =
-      [G.players[tidx].hand, G.players[pidx].hand];
+        [G.players[tidx].hand, G.players[pidx].hand];
       gameLog(`${player.name} SWAPPED WITH ${G.players[tidx].name}`, 'hi');
       resolveEffect(card, pidx, () => advanceTurn());
     };
@@ -555,7 +556,7 @@ function playCard(pidx, cidx) {
   // Chaos 0
   if (G.chaosRules.rule0 && card.value === '0') {
     const saved = G.players.map(p => [...p.hand]);
-    G.players.forEach((p,i) => {
+    G.players.forEach((p, i) => {
       p.hand = saved[(i - G.direction + G.players.length) % G.players.length];
     });
     gameLog('0-ROTATE: ALL HANDS ROTATED!', 'hi');
@@ -588,16 +589,16 @@ function resolveEffect(card, pidx, done) {
     if (pidx === 0) {
       openColorModal(afterColor);
     } else {
-      const cols   = ['red','blue','green','yellow'];
+      const cols = ['red', 'blue', 'green', 'yellow'];
       const counts = {};
-      cols.forEach(c => { counts[c] = G.players[pidx].hand.filter(h=>h.color===c).length; });
-      const best = cols.reduce((a,b) => counts[a]>=counts[b] ? a : b);
+      cols.forEach(c => { counts[c] = G.players[pidx].hand.filter(h => h.color === c).length; });
+      const best = cols.reduce((a, b) => counts[a] >= counts[b] ? a : b);
       afterColor(best);
     }
     return;
   }
 
-  if (card.value === 'skip')    { done = () => advanceTurn(true); }
+  if (card.value === 'skip') { done = () => advanceTurn(true); }
   if (card.value === 'reverse') {
     G.direction *= -1;
     gameLog('DIRECTION REVERSED!', 'hi');
@@ -666,10 +667,10 @@ function callUno() {
 // ── ULTI ─────────────────────────────────────────────────────
 function useUlti() {
   if (G.currentPlayer !== 0 || G.actionLock) return;
-  const pidx   = 0;
+  const pidx = 0;
   const player = G.players[pidx];
-  const def    = getUltiDef(player.ulti);
-  if (!def || def.passive)       return;
+  const def = getUltiDef(player.ulti);
+  if (!def || def.passive) return;
   if (G.ultiCharges[pidx] <= 0) return toast('NO CHARGES LEFT', 'danger');
   G.ultiCharges[pidx]--;
   G.actionLock = true;
@@ -702,7 +703,7 @@ function useUlti() {
     case 'neuralsync':
       openSwapModal(pidx, '🧠 NEURAL SYNC — SWAP HANDS', (tidx) => {
         [G.players[pidx].hand, G.players[tidx].hand] =
-        [G.players[tidx].hand, G.players[pidx].hand];
+          [G.players[tidx].hand, G.players[pidx].hand];
         toast(`SYNCED WITH ${G.players[tidx].name}!`, 'purple');
         gameLog(`${player.name} SYNCED WITH ${G.players[tidx].name}`, 'vip');
         G.actionLock = false; renderGame();
@@ -718,38 +719,38 @@ function useUlti() {
 }
 
 // ── BOT AI ───────────────────────────────────────────────────
-function scheduleBotTurn() { setTimeout(botTurn, 700 + Math.random()*500); }
+function scheduleBotTurn() { setTimeout(botTurn, 700 + Math.random() * 500); }
 
 function botTurn() {
   if (G.currentPlayer === 0) { G.actionLock = false; return; }
-  const pidx   = G.currentPlayer;
+  const pidx = G.currentPlayer;
   const player = G.players[pidx];
 
   // Bots don't need UNO tracking — only human gets the penalty timer
 
   // Resolve draw stack
   if (G.drawStack > 0 && G.chaosRules.stackPlus) {
-    const stacker = player.hand.find(c => c.value==='+2' || c.type==='wild4');
+    const stacker = player.hand.find(c => c.value === '+2' || c.type === 'wild4');
     if (stacker) {
       const ci = player.hand.indexOf(stacker);
       G.actionLock = false; playCard(pidx, ci); return;
     }
     const total = G.drawStack; G.drawStack = 0;
-    tryFirewall(pidx, total, () => drawCards(pidx, total), () => {});
+    tryFirewall(pidx, total, () => drawCards(pidx, total), () => { });
     G.actionLock = false; setTimeout(advanceTurn, 500); return;
   }
 
   const playable = player.hand
-    .map((c,i) => ({c,i}))
-    .filter(({c}) => canPlay(c));
+    .map((c, i) => ({ c, i }))
+    .filter(({ c }) => canPlay(c));
 
   if (playable.length > 0) {
     const prio = c =>
-      c.value==='skip'||c.value==='reverse' ? 3 :
-      c.value==='+2'    ? 2 :
-      c.type==='wild4'  ? 1 :
-      c.type==='wild'   ? 0 : -1;
-    playable.sort((a,b) => prio(b.c) - prio(a.c));
+      c.value === 'skip' || c.value === 'reverse' ? 3 :
+        c.value === '+2' ? 2 :
+          c.type === 'wild4' ? 1 :
+            c.type === 'wild' ? 0 : -1;
+    playable.sort((a, b) => prio(b.c) - prio(a.c));
     G.actionLock = false; playCard(pidx, playable[0].i);
   } else {
     drawCards(pidx, 1, true);
@@ -757,7 +758,7 @@ function botTurn() {
     const drew = player.hand.at(-1);
     if (canPlay(drew)) {
       G.actionLock = false;
-      setTimeout(() => playCard(pidx, player.hand.length-1), 400);
+      setTimeout(() => playCard(pidx, player.hand.length - 1), 400);
     } else {
       G.actionLock = false; setTimeout(advanceTurn, 500);
     }
@@ -773,13 +774,13 @@ function showWin(name) {
 
 // ── LOG (right panel) ────────────────────────────────────────
 const logHistory = [];
-function gameLog(msg, type='') {
-  logHistory.push({msg, type});
+function gameLog(msg, type = '') {
+  logHistory.push({ msg, type });
   if (logHistory.length > 40) logHistory.shift();
   const body = document.getElementById('log-body');
   if (!body) return;
   body.innerHTML = '';
-  logHistory.slice(-20).forEach(({msg:m, type:t}) => {
+  logHistory.slice(-20).forEach(({ msg: m, type: t }) => {
     const el = document.createElement('div');
     el.className = `log-entry ${t}`;
     el.textContent = `› ${m}`;
@@ -789,7 +790,7 @@ function gameLog(msg, type='') {
 }
 
 // ── TOAST ─────────────────────────────────────────────────────
-function toast(msg, type='') {
+function toast(msg, type = '') {
   document.querySelectorAll('.toast').forEach(t => t.remove());
   const el = document.createElement('div');
   el.className = `toast ${type}`; el.textContent = msg;
@@ -802,7 +803,7 @@ function openColorModal(cb) {
   G.pendingCB = cb;
   document.getElementById('color-overlay').classList.add('show');
 }
-window.pickColor = function(color) {
+window.pickColor = function (color) {
   document.getElementById('color-overlay').classList.remove('show');
   if (G.pendingCB) { G.pendingCB(color); G.pendingCB = null; }
 };
@@ -812,7 +813,7 @@ function openSwapModal(fromIdx, title, cb, excludeIdx) {
   document.getElementById('swap-title').textContent = `// ${title}`;
   const list = document.getElementById('swap-list');
   list.innerHTML = '';
-  G.players.forEach((p,i) => {
+  G.players.forEach((p, i) => {
     if (i === excludeIdx) return;
     const btn = document.createElement('button');
     btn.className = 'target-btn';
@@ -831,7 +832,7 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   document.body.style.overflow = id === 'game' ? 'hidden' : '';
-  if (id !== 'game') window.scrollTo(0,0);
+  if (id !== 'game') window.scrollTo(0, 0);
 }
 
 function confirmQuit() {
