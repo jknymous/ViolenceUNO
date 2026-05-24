@@ -17,7 +17,7 @@ function connectSocket() {
   // Use same origin in production, localhost in dev
   const SERVER_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:3000'
-    : window.location.origin;
+    : 'violenceuno-server-production.up.railway.app';
 
   return new Promise((resolve, reject) => {
     socket = io(SERVER_URL, { transports: ['websocket', 'polling'] });
